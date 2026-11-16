@@ -1,0 +1,111 @@
+{
+  "info": {
+    "name": "TicketMania simple",
+    "description": "Flujo de compra: seleccion -> pago. Ejecutar la API antes con: python ticketmania_simple.py",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "reserva", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Salud",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/salud" },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('API arriba', () => {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json().estado).to.eql('OK');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tarifas",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/tarifas" },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Trae 4 tarifas', () => pm.expect(pm.response.json().tarifas).to.have.lengthOf(4));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Seleccion",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/seleccion",
+        "body": { "mode": "raw", "raw": "{\"tarifa\": \"general\", \"cantidad\": 2}" }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "const body = pm.response.json();",
+              "pm.test('Devuelve reserva', () => pm.expect(body.reserva).to.be.a('string').and.not.empty);",
+              "pm.collectionVariables.set('reserva', body.reserva);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Pago",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/pago",
+        "body": { "mode": "raw", "raw": "{\"reserva\": \"{{reserva}}\"}" }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Pago aprobado', () => pm.expect(pm.response.json().estado).to.eql('APROBADO'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Pago repetido (debe dar 404)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/pago",
+        "body": { "mode": "raw", "raw": "{\"reserva\": \"{{reserva}}\"}" }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Reserva ya consumida -> 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
