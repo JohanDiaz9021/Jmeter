@@ -1,3 +1,6 @@
-﻿resultados.jtl
-reporte/
+# Resultados locales de JMeter (no se suben)
+*.jtl
+reporte*/
 *.log
+recursos*.csv
+pruebas/experimentacion/resultados/
